@@ -2,9 +2,8 @@ name: Daily Article Generator
 
 on:
   schedule:
-    # UTC 0:00 = 北京时间 8:00 AM
     - cron: "0 0 * * *"
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   generate:
@@ -20,11 +19,16 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        env:
+          PIP_NO_CACHE_DIR: "1"
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
 
-      - name: Generate articles
+      - name: Generate & publish articles
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          TOUTIAO_COOKIES: ${{ secrets.TOUTIAO_COOKIES || '' }}
           CONTENT_TYPE: ${{ vars.CONTENT_TYPE || 'all' }}
         run: python -m src.main
 

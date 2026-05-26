@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 
 from src.utils import setup_logging, today_str, today_cn
@@ -12,6 +13,7 @@ from src.fetchers.weather import fetch_all_weather, format_weather_data
 from src.fetchers.history import fetch_today_history, format_history_data
 from src.writer import write_gold_article, write_weather_article, write_history_article
 from src.publisher import save_article, save_daily_bundle, save_publish_log
+from src.publisher_toutiao import publish_articles as toutiao_publish
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +100,24 @@ def main():
     if ok_count == 0:
         logger.error("No articles generated, exiting with error")
         sys.exit(1)
+
+    # Auto-publish to Toutiao (only if cookies are configured)
+    if os.getenv("TOUTIAO_COOKIES"):
+        logger.info("=== Auto-publishing to Toutiao ===")
+        pub_articles = [
+            {"title": a["title"], "content": a["content"]}
+            for a in articles
+            if a.get("status") == "ok" and "content" in a
+        ]
+        if pub_articles:
+            pub_result = toutiao_publish(pub_articles)
+            logger.info(
+                f"Publish result: {pub_result['success']} ok, "
+                f"{pub_result['failed']} failed"
+            )
+    else:
+        logger.info("No TOUTIAO_COOKIES set, skipping auto-publish. "
+                      "Run cookie_helper.py to set up.")
 
 
 if __name__ == "__main__":
