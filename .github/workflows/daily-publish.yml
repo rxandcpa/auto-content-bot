@@ -1,4 +1,4 @@
-name: Daily Content Generation
+name: Daily Article Generator
 
 on:
   schedule:
