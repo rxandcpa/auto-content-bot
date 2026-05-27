@@ -17,13 +17,21 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """你叫老七，是一个有10年经验的中文自媒体写手，擅长把复杂信息写成普通人爱看的文章。
 
 你的写作铁律（违反任何一条=失败）：
-1. 第一句必须制造悬念或抛出一个让人想继续读的事实，禁止用"今天""近日""随着"开头
-2. 每段不超过4句话，段落之间用空行隔开
-3. 数据必须配上生活化类比（比如"这个数字相当于北京市一年的GDP"）
-4. 至少出现一处第一人称的感受或吐槽（"说实话""我看完数据之后""说实话有点意外"）
-5. 禁用这些AI套话：值得注意的是、此外、总而言之、综上所述、显而易见、毋庸置疑、众所周知
-6. 标题要有情绪但不标题党，让读者产生"这个我得看看"的冲动
-7. 结尾要干脆，一句话收住，不要"让我们拭目以待""未来可期"这类废话
+
+【真实性——最重要，违反直接报废】
+1. 只能使用提供给你的数据。不要编造、修改、或"补充"任何数字、日期、人名、地名
+2. 如果数据里说金价是 X 美元，你只能写 X 美元，不能改成其他数字
+3. 如果数据不足以支撑一篇完整的分析，可以简短收尾，但绝不能编造来填字数
+4. 不要引用"某专家说""据分析""机构预测"这类虚构信源
+
+【文风】
+6. 第一句必须制造悬念或抛出一个让人想继续读的事实，禁止用"今天""近日""随着"开头
+7. 每段不超过4句话，段落之间用空行隔开
+8. 数据必须配上生活化类比（比如"这个数字相当于北京市一年的GDP"）
+9. 至少出现一处第一人称的感受或吐槽（"说实话""我看完数据之后""说实话有点意外"）
+10. 禁用这些AI套话：值得注意的是、此外、总而言之、综上所述、显而易见、毋庸置疑、众所周知
+11. 标题要有情绪但不标题党，让读者产生"这个我得看看"的冲动
+12. 结尾要干脆，一句话收住，不要"让我们拭目以待""未来可期"这类废话
 
 输出格式：
 ===TITLE===
@@ -94,18 +102,26 @@ def write_gold_article(gold_data_str: str) -> dict | None:
 你是财经类爆款写手。你的读者是普通上班族，不是金融从业者。用最直白的大白话讲清楚金价波动和他们钱包的关系。"""
 
     angles = [
-        "假设你手里有1万块闲钱，今天该不该买黄金？从今天的数据出发，给一个明确的判断。",
-        "金价又变了。把这轮波动背后的真实原因挖出来，要提到具体的国际事件或政策变化。",
-        "对比三个月前的金价，分析现在是买入时机还是该等等。给出具体价位参考。",
+        "假设你手里有1万块闲钱，今天该不该买黄金？只根据提供的数据给一个明确的判断。",
+        "金价变了。只根据数据里的价格，给出具体的投资操作建议（买/卖/持有），不要预测未来价格。",
+        "只使用提供的数据，分析当前金价对普通人的3条影响。",
     ]
     angle = random.choice(angles)
 
-    prompt = f"今天是{today_cn()}。\n金价数据：{gold_data_str}\n\n{angle}\n字数{config.ARTICLE_WORD_COUNT}字左右。"
-
+    prompt = (
+        f"今天是{today_cn()}。\n"
+        f"金价数据：{gold_data_str}\n\n"
+        f"{angle}\n"
+        f"字数{config.ARTICLE_WORD_COUNT}字左右。\n"
+        f"重要：只能使用上面提供的数字。不要修改价格。数据来源会在文末标注。"
+    )
+    # Append data source disclaimer
     raw = call_deepseek(system, prompt)
-    if not raw:
-        return None
-    return parse_article(raw)
+    if raw:
+        article = parse_article(raw)
+        article["content"] += "\n\n（数据来源：国际黄金现货市场实时报价）"
+        return article
+    return None
 
 
 def write_weather_article(weather_data_str: str) -> dict | None:
@@ -121,12 +137,19 @@ def write_weather_article(weather_data_str: str) -> dict | None:
     ]
     angle = random.choice(angles)
 
-    prompt = f"今天是{today_cn()}。\n天气数据：\n{weather_data_str}\n\n{angle}\n字数{config.ARTICLE_WORD_COUNT}字左右。"
-
+    prompt = (
+        f"今天是{today_cn()}。\n"
+        f"天气数据：\n{weather_data_str}\n\n"
+        f"{angle}\n"
+        f"字数{config.ARTICLE_WORD_COUNT}字左右。\n"
+        f"只能使用上面提供的温度、湿度、天气描述，不要编造数据。"
+    )
     raw = call_deepseek(system, prompt)
-    if not raw:
-        return None
-    return parse_article(raw)
+    if raw:
+        article = parse_article(raw)
+        article["content"] += "\n\n（数据来源：国际气象服务实时数据）"
+        return article
+    return None
 
 
 def write_history_article(history_data_str: str) -> dict | None:
@@ -142,12 +165,18 @@ def write_history_article(history_data_str: str) -> dict | None:
     ]
     angle = random.choice(angles)
 
-    prompt = f"今天是{today_cn()}。\n{history_data_str}\n\n{angle}\n字数{config.ARTICLE_WORD_COUNT}字左右。"
-
+    prompt = (
+        f"今天是{today_cn()}。\n{history_data_str}\n\n"
+        f"{angle}\n"
+        f"字数{config.ARTICLE_WORD_COUNT}字左右。\n"
+        f"只使用上面提供的历史事件。可以展开讲背景故事，但不能编造新的事件、年份或人名。"
+    )
     raw = call_deepseek(system, prompt)
-    if not raw:
-        return None
-    return parse_article(raw)
+    if raw:
+        article = parse_article(raw)
+        article["content"] += "\n\n（数据来源：维基百科「历史上的今天」）"
+        return article
+    return None
 
 
 def write_trending_article(trending_data_str: str) -> dict | None:
@@ -166,10 +195,12 @@ def write_trending_article(trending_data_str: str) -> dict | None:
     prompt = (
         f"今天是{today_cn()}。\n以下是今日网络热搜榜单：\n{trending_data_str}\n\n"
         f"{angle}\n字数{config.ARTICLE_WORD_COUNT}字左右。\n"
-        "重要：不要只列热搜，要选最有料的话题深度写。一个话题写透了，比十个话题一笔带过强。"
+        "重要：热搜榜单是真实数据。你可以评论、分析，但不能编造热搜里不存在的事件。"
+        "一个话题写透了，比十个话题一笔带过强。"
     )
-
     raw = call_deepseek(system, prompt)
-    if not raw:
-        return None
-    return parse_article(raw)
+    if raw:
+        article = parse_article(raw)
+        article["content"] += "\n\n（数据来源：微博/百度实时热搜榜）"
+        return article
+    return None
