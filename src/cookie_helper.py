@@ -1,23 +1,21 @@
 """
-Method: Use an already-logged-in browser instead of trying to log in fresh.
+Connect to an already-open, already-logged-in browser window.
 
-Step 1: Close all Edge windows
-Step 2: Run this script: python -m src.cookie_helper
-Step 3: A NEW Edge window opens. Navigate to mp.toutiao.com and log in.
-Step 4: Press Enter. State saved. Done.
+Step 1: Close ALL Edge windows
+Step 2: Paste the command below into a terminal (or Win+R):
+        start msedge --remote-debugging-port=9222 --user-data-dir="%TEMP%\edge_tt"
 
-Uses persistent browser profile — no bot detection because it's the real browser.
+Step 3: In the new Edge window, go to https://mp.toutiao.com and log in
+Step 4: Run this script: python -m src.cookie_helper
+Step 5: Script connects to your logged-in browser and saves the state
 """
 
 from __future__ import annotations
 
 import json
 import os
-import shutil
 import sys
 
-# Persistent profile directory
-PROFILE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "toutiao_profile")
 STATE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "toutiao_state.json")
 
 
@@ -28,100 +26,91 @@ def main():
         print("Run: pip install playwright && playwright install chromium")
         sys.exit(1)
 
-    # Check if this is a fresh start or a return visit
-    is_first_time = not os.path.exists(STATE_FILE)
-
     print("=" * 60)
-    if is_first_time:
-        print("  首次设置：需要手动登录头条号")
-    else:
-        print("  更新登录状态（旧状态可能已过期）")
+    print("  连接已登录的浏览器")
     print("=" * 60)
     print()
-    print("  注意事项：")
-    print("  1. 请先关闭所有 Edge 浏览器窗口")
-    print("  2. 新窗口打开后，访问 https://mp.toutiao.com")
-    print("  3. 用手机号+验证码登录，勾选「记住我」")
-    print("  4. 登录成功后，回到终端按 Enter")
+    print("  请确认已完成以下操作：")
+    print()
+    print("  1. 关闭了所有 Edge 窗口")
+    print("  2. 在终端或 Win+R 执行了：")
+    print("     start msedge --remote-debugging-port=9222 --user-data-dir=%TEMP%\\edge_tt")
+    print("  3. 在新 Edge 窗口里登录了 https://mp.toutiao.com")
+    print("  4. 登录成功，能看到后台页面")
     print("=" * 60)
     print()
 
-    input("按 Enter 开始...")
+    # Check if Edge with debugging port is running
+    import subprocess
+    result = subprocess.run(
+        ["netstat", "-ano"],
+        capture_output=True, text=True,
+    )
+    if "9222" not in result.stdout:
+        print("⚠️  未检测到端口 9222，请确认已用以下命令启动 Edge：")
+        print('   start msedge --remote-debugging-port=9222 --user-data-dir="%TEMP%\\edge_tt"')
+        print()
+        resp = input("如果已启动，按 Enter 继续...")
 
-    # Remove old profile for clean start
-    if os.path.exists(PROFILE_DIR):
-        try:
-            shutil.rmtree(PROFILE_DIR)
-        except Exception:
-            pass
-
-    os.makedirs(PROFILE_DIR, exist_ok=True)
+    input("确认登录完成后按 Enter...")
 
     with sync_playwright() as p:
-        # Use persistent context — this creates a real browser profile
-        # that persists on disk, drastically reducing bot detection
-        context = p.chromium.launch_persistent_context(
-            user_data_dir=PROFILE_DIR,
-            headless=False,
-            channel="msedge",  # Use Edge
-            viewport={"width": 1440, "height": 900},
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
-            ),
-            locale="zh-CN",
-            timezone_id="Asia/Shanghai",
-            ignore_default_args=["--enable-automation"],
-            args=[
-                "--no-sandbox",
-                "--disable-features=AutomationControlled",
-            ],
-        )
+        try:
+            # Connect to the already-running Edge browser
+            browser = p.chromium.connect_over_cdp("http://localhost:9222")
+            print("✅ 已连接到 Edge 浏览器")
+        except Exception as e:
+            print(f"❌ 连接失败: {e}")
+            print()
+            print("请确认：")
+            print("  1. Edge 是用上面的命令启动的")
+            print("  2. 端口 9222 没有被防火墙阻止")
+            print("  3. Edge 窗口还开着")
+            sys.exit(1)
 
-        # Add stealth script
-        context.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {get: () => false});
-            window.chrome = {runtime: {}};
-        """)
+        # Get the first context (there should be at least one)
+        contexts = browser.contexts
+        if not contexts:
+            print("❌ 没有找到浏览器上下文，请确认 Edge 已打开网页")
+            browser.close()
+            sys.exit(1)
 
+        context = contexts[0]
+
+        # Navigate to Toutiao to verify login
         page = context.new_page()
-
         try:
             page.goto("https://mp.toutiao.com", timeout=15000)
         except Exception:
             pass
 
-        print()
-        print("浏览器已打开。请在浏览器中操作：")
-        print("  → 如果没自动跳转，地址栏输入 https://mp.toutiao.com")
-        print("  → 用手机号+验证码登录")
-        print("  → 看到后台页面（文章管理/数据概览等）后")
-        print("  → 回到这里按 Enter")
-        print()
-        input("登录完成后按 Enter 保存状态...")
+        # Check if logged in
+        page.wait_for_timeout(3000)
+        current_url = page.url
+        if "login" in current_url.lower() or "passport" in current_url.lower():
+            print()
+            print("⚠️  看起来还没登录。请在 Edge 窗口里手动登录，然后按 Enter...")
+            input()
 
-        # Export storageState
+        # Export storage state from the logged-in context
         state = context.storage_state()
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
 
-        context.close()
+        print()
+        print(f"✅ 登录状态已保存到: {STATE_FILE}")
+        print(f"   Cookie 数量: {len(state.get('cookies', []))}")
 
-    # Keep the profile for future use (validates state export worked)
-    print()
-    print(f"✅ 登录状态已保存！")
-    print(f"   状态文件: {STATE_FILE}")
-    print(f"   浏览器配置: {PROFILE_DIR}")
+        # Don't close the browser - user might still be using it
+        browser.close()
+
     print()
     print("下一步：")
-    print("  1. 打开 toutiao_state.json → 复制全部内容")
-    print("  2. GitHub → 仓库 → Settings → Secrets → Actions")
-    print("  3. New secret:")
+    print("  1. 打开 toutiao_state.json")
+    print("  2. 复制全部内容")
+    print("  3. GitHub → Settings → Secrets → Actions → New secret")
     print("     Name:  TOUTIAO_STATE")
-    print("     Value: toutiao_state.json 的全部内容")
-    print()
-    print("之后每天早上文章就会自动发布到头条号。")
+    print("     Value: 粘贴 toutiao_state.json 的全部内容")
 
 
 if __name__ == "__main__":
