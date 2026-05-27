@@ -1,10 +1,8 @@
 .env
-toutiao_state.json
-cookies.json
 __pycache__/
 *.pyc
 .venv/
 venv/
 .DS_Store
 *.png
-*.png
+toutiao_profile/

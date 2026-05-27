@@ -149,24 +149,6 @@ def main():
     # Auto-commit articles to repo (GitHub Actions only)
     _commit_output()
 
-    # ── Auto-publish to Toutiao (only if cookies configured) ──
-    if os.getenv("TOUTIAO_COOKIES"):
-        logger.info("=== Auto-publishing to Toutiao ===")
-        try:
-            from src.publisher_toutiao import publish_articles as toutiao_publish
-            pub_articles = [
-                {"title": a["title"], "content": a["content"]}
-                for a in articles
-                if a.get("status") == "ok" and "content" in a
-            ]
-            if pub_articles:
-                pub_result = toutiao_publish(pub_articles)
-                logger.info(
-                    f"Publish: {pub_result['success']} ok, {pub_result['failed']} failed"
-                )
-        except Exception as e:
-            logger.warning(f"Auto-publish failed (non-critical): {e}")
-
     ok_count = sum(1 for a in articles if a["status"] == "ok")
     logger.info(f"=== Done: {ok_count}/{len(articles)} articles ===")
 

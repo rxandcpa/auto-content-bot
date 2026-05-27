@@ -2,10 +2,9 @@ name: Daily Article Generator
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * *"  # UTC 0:00 = Beijing 8:00 AM
   workflow_dispatch:
 
-# Need write permission to commit articles back to repo
 permissions:
   contents: write
 
@@ -14,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -26,20 +25,15 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        env:
-          PIP_NO_CACHE_DIR: "1"
-        run: |
-          pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
+        run: pip install -r requirements.txt
 
-      - name: Generate & publish articles
+      - name: Generate articles
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          TOUTIAO_STATE: ${{ secrets.TOUTIAO_STATE || '' }}
           CONTENT_TYPE: ${{ vars.CONTENT_TYPE || 'all' }}
         run: python -m src.main
 
-      - name: Upload artifacts (backup)
+      - name: Upload backup
         if: always()
         uses: actions/upload-artifact@v4
         with:
