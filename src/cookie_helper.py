@@ -31,20 +31,26 @@ def main():
     print()
 
     with sync_playwright() as p:
-        # Try system Chrome first (harder to detect), fall back to bundled Chromium
-        try:
-            browser = p.chromium.launch(
-                headless=False,
-                channel="chrome",
-                args=["--no-sandbox", "--disable-blink-features=AutomationControlled"],
-            )
-            print("（使用系统 Chrome 浏览器）")
-        except Exception:
-            browser = p.chromium.launch(
-                headless=False,
-                args=["--no-sandbox", "--disable-blink-features=AutomationControlled"],
-            )
-            print("（使用内置 Chromium）")
+        # Try system browser first (less detectable), fall back to bundled Chromium
+        launched = False
+        for channel in ["msedge", "chrome", None]:
+            try:
+                launch_args = {
+                    "headless": False,
+                    "args": ["--no-sandbox", "--disable-blink-features=AutomationControlled"],
+                }
+                if channel:
+                    launch_args["channel"] = channel
+                browser = p.chromium.launch(**launch_args)
+                print(f"（使用: {channel or '内置 Chromium'}）")
+                launched = True
+                break
+            except Exception:
+                continue
+
+        if not launched:
+            print("无法启动浏览器。请确保已安装 Edge 或 Chrome")
+            sys.exit(1)
 
         context = browser.new_context(
             viewport={"width": 1440, "height": 900},
