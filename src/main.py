@@ -20,7 +20,7 @@ from src.writer import (
     write_history_article,
     write_trending_article,
 )
-from src.publisher import save_article, save_daily_bundle, save_publish_log
+from src.publisher import save_article, save_daily_bundle, save_publish_log, cleanup_old_files
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +99,10 @@ def _commit_output() -> bool:
 def main():
     setup_logging()
     logger.info(f"=== Auto Content Bot - {today_cn()} ===")
+
+    # Cleanup files older than 7 days
+    cleanup_old_files()
+
     logger.info(f"Content type: {CONTENT_TYPE}")
 
     articles = []
@@ -112,12 +116,15 @@ def main():
     ]
 
     if CONTENT_TYPE == "all":
-        # Run 2-3 randomly selected pipelines for variety
-        selected = random.sample(all_pipelines, k=random.choice([2, 3]))
-        # But always include at least gold or trending (high engagement topics)
-        high_engagement = [p for p in all_pipelines if p[0] in ("gold", "trending")]
-        if not any(p[0] in [s[0] for s in selected] for p in high_engagement):
-            selected[0] = random.choice(high_engagement)
+        # Run exactly 3 out of 4 pipelines for daily variety
+        # Always include at least gold or trending (high engagement)
+        high = [p for p in all_pipelines if p[0] in ("gold", "trending")]
+        others = [p for p in all_pipelines if p not in high]
+        # Pick 1-2 high-engagement + fill with others to reach 3
+        selected = random.sample(high, k=min(2, len(high)))
+        remaining = 3 - len(selected)
+        if remaining > 0 and others:
+            selected += random.sample(others, k=min(remaining, len(others)))
     else:
         selected = [p for p in all_pipelines if p[0] == CONTENT_TYPE]
 

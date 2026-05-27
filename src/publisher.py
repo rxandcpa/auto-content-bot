@@ -1,16 +1,19 @@
-"""Save generated articles as publish-ready files."""
+"""Save generated articles as publish-ready files. Auto-cleanup old files."""
 
 from __future__ import annotations
 
+import glob
 import json
 import logging
 import os
+import time
 
 from src.utils import today_str, today_cn
 
 logger = logging.getLogger(__name__)
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output")
+MAX_AGE_DAYS = 7  # Keep articles for this many days
 
 
 def save_article(title: str, content: str, category: str = "") -> str:
@@ -90,3 +93,25 @@ def save_publish_log(entries: list[dict]) -> str:
         json.dump(entries, f, ensure_ascii=False, indent=2)
     logger.info(f"Publish log saved: {log_path}")
     return log_path
+
+
+def cleanup_old_files(max_age_days: int = MAX_AGE_DAYS) -> int:
+    """Delete article files older than max_age_days. Returns count of deleted files."""
+    if not os.path.isdir(OUTPUT_DIR):
+        return 0
+
+    cutoff = time.time() - max_age_days * 86400
+    deleted = 0
+
+    for f in glob.glob(os.path.join(OUTPUT_DIR, "*")):
+        try:
+            if os.path.getmtime(f) < cutoff:
+                os.remove(f)
+                deleted += 1
+                logger.debug(f"Cleaned up: {f}")
+        except OSError:
+            pass
+
+    if deleted:
+        logger.info(f"Cleaned up {deleted} old article files (>{max_age_days} days)")
+    return deleted
