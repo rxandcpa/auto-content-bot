@@ -5,6 +5,10 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+# Need write permission to commit articles back to repo
+permissions:
+  contents: write
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -12,6 +16,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -28,11 +35,11 @@ jobs:
       - name: Generate & publish articles
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          TOUTIAO_COOKIES: ${{ secrets.TOUTIAO_COOKIES || '' }}
+          TOUTIAO_STATE: ${{ secrets.TOUTIAO_STATE || '' }}
           CONTENT_TYPE: ${{ vars.CONTENT_TYPE || 'all' }}
         run: python -m src.main
 
-      - name: Upload articles
+      - name: Upload artifacts (backup)
         if: always()
         uses: actions/upload-artifact@v4
         with:
