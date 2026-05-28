@@ -1,0 +1,20 @@
+[
+  {
+    "topic": "gold",
+    "status": "skipped",
+    "title": "",
+    "reason": "no data"
+  },
+  {
+    "topic": "trending",
+    "status": "ok",
+    "title": "今天的热搜，藏着三个扎心真相：国家要扛、天气要命、普通人要活",
+    "reason": ""
+  },
+  {
+    "topic": "history",
+    "status": "ok",
+    "title": "一只大猩猩的死，为何让全世界吵了整整十年？",
+    "reason": ""
+  }
+]
