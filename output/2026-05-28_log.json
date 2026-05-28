@@ -1,20 +1,20 @@
 [
   {
     "topic": "gold",
-    "status": "skipped",
-    "title": "",
-    "reason": "no data"
+    "status": "ok",
+    "title": "金价飙到4378美元，现在该买还是该卖？我劝你先看完这个",
+    "reason": ""
   },
   {
     "topic": "trending",
     "status": "ok",
-    "title": "今天的热搜，藏着三个扎心真相：国家要扛、天气要命、普通人要活",
+    "title": "今天的热搜，藏着三股中国人最憋屈的情绪",
     "reason": ""
   },
   {
-    "topic": "history",
+    "topic": "weather",
     "status": "ok",
-    "title": "一只大猩猩的死，为何让全世界吵了整整十年？",
+    "title": "今天这天气，外卖小哥和晨练大爷都得骂娘",
     "reason": ""
   }
 ]
