@@ -1,0 +1,20 @@
+[
+  {
+    "topic": "trending",
+    "status": "failed",
+    "title": "",
+    "reason": "AI error"
+  },
+  {
+    "topic": "gold",
+    "status": "failed",
+    "title": "",
+    "reason": "AI error"
+  },
+  {
+    "topic": "history",
+    "status": "failed",
+    "title": "",
+    "reason": "AI error"
+  }
+]
