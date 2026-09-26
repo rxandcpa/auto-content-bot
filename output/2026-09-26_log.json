@@ -1,0 +1,20 @@
+[
+  {
+    "topic": "gold",
+    "status": "skipped",
+    "title": "",
+    "reason": "no data"
+  },
+  {
+    "topic": "trending",
+    "status": "ok",
+    "title": "今天的热搜榜，一半是握手，一半是告别",
+    "reason": ""
+  },
+  {
+    "topic": "history",
+    "status": "ok",
+    "title": "9月26日，历史在这一天格外沉重",
+    "reason": ""
+  }
+]
