@@ -1,0 +1,20 @@
+[
+  {
+    "topic": "trending",
+    "status": "skipped",
+    "title": "",
+    "reason": "no data"
+  },
+  {
+    "topic": "gold",
+    "status": "ok",
+    "title": "金价站上3650美元，你手里的金镯子现在值多少钱？",
+    "reason": ""
+  },
+  {
+    "topic": "history",
+    "status": "ok",
+    "title": "如果今天你穿越回11月28日，会撞见哪一幕？",
+    "reason": ""
+  }
+]
